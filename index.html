@@ -1,0 +1,2074 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>✨ Magic Potion Sort</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0d0820;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Nunito", sans-serif;
+        touch-action: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #wrap {
+        position: relative;
+      }
+      #wrap canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 20px;
+      }
+      #cv {
+        z-index: 1;
+      }
+      #fx {
+        z-index: 2;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="wrap"><canvas id="cv"></canvas><canvas id="fx"></canvas></div>
+    <script>
+      const W = 480,
+        H = 854,
+        CAP = 4;
+
+      const POTIONS = [
+        { id: 0, base: "#ff4466", hi: "#ff99bb", lo: "#aa0033", name: "Ruby" },
+        {
+          id: 1,
+          base: "#3388ff",
+          hi: "#88ccff",
+          lo: "#003399",
+          name: "Sapphire",
+        },
+        {
+          id: 2,
+          base: "#22dd66",
+          hi: "#88ffbb",
+          lo: "#007733",
+          name: "Emerald",
+        },
+        {
+          id: 3,
+          base: "#ffcc00",
+          hi: "#ffee88",
+          lo: "#aa8800",
+          name: "Sunburst",
+        },
+        {
+          id: 4,
+          base: "#aa44ff",
+          hi: "#dd99ff",
+          lo: "#660099",
+          name: "Arcane",
+        },
+        {
+          id: 5,
+          base: "#ff7722",
+          hi: "#ffbb66",
+          lo: "#aa3300",
+          name: "Phoenix",
+        },
+        {
+          id: 6,
+          base: "#ff44cc",
+          hi: "#ff99ee",
+          lo: "#aa0077",
+          name: "Blossom",
+        },
+        {
+          id: 7,
+          base: "#00ddcc",
+          hi: "#88ffee",
+          lo: "#007766",
+          name: "Mystic",
+        },
+      ];
+
+      const LEVELS = [
+        { id: 1, name: "Baby Steps", tubes: [[0, 1, 0, 1], [1, 0, 1, 0], []] },
+        {
+          id: 2,
+          name: "Triple Brew",
+          tubes: [[0, 1, 2, 0], [2, 0, 1, 2], [1, 2, 0, 1], []],
+        },
+        {
+          id: 3,
+          name: "Open Lab",
+          tubes: [[0, 1, 2, 1], [2, 0, 2, 1], [0, 1, 0, 2], [], []],
+        },
+        {
+          id: 4,
+          name: "Four Flasks",
+          tubes: [[0, 1, 2, 3], [3, 2, 1, 0], [1, 3, 0, 2], [2, 0, 3, 1], []],
+        },
+        {
+          id: 5,
+          name: "Colour Clash",
+          tubes: [
+            [0, 2, 1, 3],
+            [1, 3, 0, 2],
+            [3, 0, 2, 1],
+            [2, 1, 3, 0],
+            [],
+            [],
+          ],
+        },
+        {
+          id: 6,
+          name: "High Five",
+          tubes: [
+            [0, 1, 2, 3],
+            [4, 0, 3, 1],
+            [2, 4, 1, 0],
+            [3, 2, 4, 3],
+            [1, 3, 0, 4],
+            [],
+            [],
+          ],
+        },
+        {
+          id: 7,
+          name: "Tight Squeeze",
+          tubes: [
+            [4, 2, 0, 1],
+            [3, 4, 1, 2],
+            [0, 3, 4, 0],
+            [1, 0, 3, 4],
+            [2, 1, 2, 3],
+            [],
+          ],
+        },
+        {
+          id: 8,
+          name: "Six Shooter",
+          tubes: [
+            [0, 1, 5, 2],
+            [3, 5, 0, 4],
+            [4, 2, 3, 5],
+            [5, 4, 1, 0],
+            [2, 0, 4, 3],
+            [1, 3, 2, 1],
+            [],
+            [],
+          ],
+        },
+        {
+          id: 9,
+          name: "Vivid Chaos",
+          tubes: [
+            [5, 1, 2, 0],
+            [4, 5, 3, 1],
+            [0, 4, 5, 2],
+            [3, 0, 1, 4],
+            [2, 3, 0, 5],
+            [1, 2, 4, 3],
+            [],
+          ],
+        },
+        {
+          id: 10,
+          name: "Lucky Seven",
+          tubes: [
+            [0, 6, 1, 3],
+            [5, 2, 6, 0],
+            [4, 5, 3, 6],
+            [6, 4, 2, 5],
+            [3, 0, 4, 1],
+            [1, 3, 5, 2],
+            [2, 1, 0, 4],
+            [],
+            [],
+          ],
+        },
+        {
+          id: 11,
+          name: "No Mercy",
+          tubes: [
+            [6, 2, 0, 4],
+            [5, 3, 6, 1],
+            [0, 5, 2, 6],
+            [4, 0, 3, 5],
+            [3, 4, 1, 2],
+            [1, 6, 5, 3],
+            [2, 1, 4, 0],
+            [],
+          ],
+        },
+        {
+          id: 12,
+          name: "Master Alchemist",
+          tubes: [
+            [0, 7, 1, 4],
+            [6, 2, 7, 0],
+            [5, 6, 3, 7],
+            [7, 5, 4, 6],
+            [4, 3, 6, 1],
+            [3, 4, 5, 2],
+            [1, 0, 2, 5],
+            [2, 1, 0, 3],
+            [],
+            [],
+          ],
+        },
+      ];
+
+      const Store = {
+        get prog() {
+          try {
+            return JSON.parse(localStorage.getItem("mps_prog")) || {};
+          } catch {
+            return {};
+          }
+        },
+        save(id, stars, moves, secs) {
+          const p = this.prog,
+            prev = p[id] || { stars: 0, moves: 9999, secs: 9999 };
+          p[id] = {
+            stars: Math.max(prev.stars, stars),
+            moves: Math.min(prev.moves, moves),
+            secs: Math.min(prev.secs, secs),
+            done: true,
+          };
+          localStorage.setItem("mps_prog", JSON.stringify(p));
+        },
+        unlocked(id) {
+          if (id <= 1) return true;
+          const p = this.prog;
+          return !!(p[id - 1] && p[id - 1].done);
+        },
+        lvl(id) {
+          return this.prog[id] || null;
+        },
+        get coins() {
+          return parseInt(localStorage.getItem("mps_coins") || "0", 10);
+        },
+        addCoins(n) {
+          localStorage.setItem("mps_coins", this.coins + n);
+        },
+      };
+
+      class Sfx {
+        constructor() {
+          this._ac = null;
+        }
+        _ctx() {
+          if (!this._ac)
+            try {
+              this._ac = new (
+                window.AudioContext || window.webkitAudioContext
+              )();
+            } catch {}
+          if (this._ac?.state === "suspended") this._ac.resume();
+          return this._ac;
+        }
+        _beep({ f = 440, t = "sine", g = 0.25, d = 0.12, delay = 0 } = {}) {
+          const c = this._ctx();
+          if (!c) return;
+          const o = c.createOscillator(),
+            gn = c.createGain();
+          o.connect(gn);
+          gn.connect(c.destination);
+          o.type = t;
+          o.frequency.value = f;
+          const n = c.currentTime + delay;
+          gn.gain.setValueAtTime(0, n);
+          gn.gain.linearRampToValueAtTime(g, n + 0.008);
+          gn.gain.exponentialRampToValueAtTime(0.001, n + d);
+          o.start(n);
+          o.stop(n + d + 0.02);
+        }
+        pick() {
+          this._beep({ f: 700, d: 0.04, g: 0.16 });
+        }
+        // instant "plop" for tap-move — short and snappy
+        plop() {
+          this._beep({ f: 480, t: "triangle", d: 0.06, g: 0.2 });
+          this._beep({ f: 620, t: "triangle", d: 0.05, g: 0.14, delay: 0.03 });
+        }
+        bad() {
+          this._beep({ f: 220, t: "sawtooth", d: 0.07, g: 0.14 });
+          this._beep({ f: 180, t: "sawtooth", d: 0.06, g: 0.11, delay: 0.07 });
+        }
+        done() {
+          [0, 0.05, 0.1].forEach((d, i) =>
+            this._beep({ f: 500 * Math.pow(1.35, i), d: 0.1, delay: d }),
+          );
+        }
+        win() {
+          [523, 659, 784, 1047, 1319].forEach((f, i) =>
+            this._beep({ f, d: 0.18, delay: i * 0.06 }),
+          );
+        }
+        undo() {
+          this._beep({ f: 300, t: "triangle", d: 0.08, g: 0.14 });
+        }
+        hint() {
+          this._beep({ f: 880, d: 0.04, g: 0.11 });
+          this._beep({ f: 1100, d: 0.04, g: 0.11, delay: 0.05 });
+        }
+      }
+      const sfx = new Sfx();
+
+      class Logic {
+        constructor(tubes) {
+          this.t = tubes.map((t) => [...t]);
+          this.hist = [];
+          this.moves = 0;
+        }
+        top(i) {
+          const t = this.t[i];
+          return t.length ? t[t.length - 1] : null;
+        }
+        empty(i) {
+          return !this.t[i].length;
+        }
+        full(i) {
+          return this.t[i].length >= CAP;
+        }
+        complete(i) {
+          const t = this.t[i];
+          return t.length === CAP && t.every((c) => c === t[0]);
+        }
+        groupSz(i) {
+          const t = this.t[i];
+          if (!t.length) return 0;
+          const c = t[t.length - 1];
+          let n = 0;
+          for (let j = t.length - 1; j >= 0; j--) {
+            if (t[j] === c) n++;
+            else break;
+          }
+          return n;
+        }
+        can(f, to) {
+          if (f === to || this.empty(f) || this.complete(f) || this.full(to))
+            return false;
+          const d = this.top(to);
+          return d === null || d === this.top(f);
+        }
+        move(f, to) {
+          if (!this.can(f, to)) return 0;
+          this.hist.push(this.t.map((x) => [...x]));
+          const gs = this.groupSz(f),
+            sp = CAP - this.t[to].length,
+            cnt = Math.min(gs, sp);
+          for (let i = 0; i < cnt; i++) this.t[to].push(this.t[f].pop());
+          this.moves++;
+          return cnt;
+        }
+        undo() {
+          if (!this.hist.length) return false;
+          this.t = this.hist.pop();
+          this.moves = Math.max(0, this.moves - 1);
+          return true;
+        }
+        won() {
+          return this.t.every((_, i) => this.empty(i) || this.complete(i));
+        }
+        hint() {
+          const n = this.t.length;
+          for (let f = 0; f < n; f++) {
+            if (this.empty(f) || this.complete(f)) continue;
+            for (let t = 0; t < n; t++) {
+              if (!this.can(f, t)) continue;
+              const sim = this.t.map((x) => [...x]);
+              const c = sim[f][sim[f].length - 1];
+              while (
+                sim[f].length &&
+                sim[f][sim[f].length - 1] === c &&
+                sim[t].length < CAP
+              )
+                sim[t].push(sim[f].pop());
+              if (sim[t].length === CAP && sim[t].every((x) => x === c))
+                return { from: f, to: t };
+            }
+          }
+          for (let f = 0; f < n; f++) {
+            if (this.empty(f) || this.complete(f)) continue;
+            for (let t = 0; t < n; t++) {
+              if (this.can(f, t) && !this.empty(t)) return { from: f, to: t };
+            }
+          }
+          for (let f = 0; f < n; f++)
+            for (let t = 0; t < n; t++)
+              if (this.can(f, t)) return { from: f, to: t };
+          return null;
+        }
+      }
+
+      // ── FLASH: quick glow ring on destination after instant tap-move ──
+      class FlashAnim {
+        constructor() {
+          this.items = [];
+        }
+        add(x, y, col) {
+          this.items.push({ x, y, col, t: 0, dur: 220 });
+        }
+        update(dt) {
+          this.items = this.items.filter((f) => {
+            f.t += dt;
+            return f.t < f.dur;
+          });
+        }
+        draw(ctx, bw, bh) {
+          this.items.forEach((f) => {
+            const pct = 1 - f.t / f.dur;
+            const scale = 1 + 0.18 * (1 - f.t / f.dur);
+            ctx.save();
+            ctx.globalAlpha = pct * 0.7;
+            ctx.shadowColor = f.col;
+            ctx.shadowBlur = 30 * pct;
+            ctx.strokeStyle = f.col;
+            ctx.lineWidth = 3 * pct;
+            ctx.beginPath();
+            ctx.arc(f.x, f.y + bh * 0.4, bw * 0.6 * scale, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          });
+        }
+      }
+
+      class FX {
+        constructor(c) {
+          this.c = c;
+          this.ctx = c.getContext("2d");
+          this.p = [];
+          this._run = false;
+        }
+        burst(x, y, col, n = 28) {
+          for (let i = 0; i < n; i++) {
+            const a = Math.random() * Math.PI * 2,
+              sp = 2 + Math.random() * 9;
+            const shapes = ["circle", "star", "diamond"];
+            this.p.push({
+              x,
+              y,
+              vx: Math.cos(a) * sp,
+              vy: Math.sin(a) * sp - 4,
+              col,
+              alpha: 1,
+              s: 3 + Math.random() * 8,
+              decay: 0.018 + Math.random() * 0.015,
+              rot: Math.random() * 6,
+              rv: (Math.random() - 0.5) * 0.3,
+              shape: shapes[Math.floor(Math.random() * 3)],
+            });
+          }
+          this._go();
+        }
+        confetti() {
+          const W = this.c.width;
+          for (let i = 0; i < 120; i++) {
+            setTimeout(() => {
+              const p = POTIONS[Math.floor(Math.random() * 8)];
+              const shapes = ["circle", "square", "diamond"];
+              this.p.push({
+                x: Math.random() * W,
+                y: -20,
+                vx: (Math.random() - 0.5) * 4,
+                vy: 3 + Math.random() * 5,
+                col: p.base,
+                alpha: 1,
+                s: 5 + Math.random() * 10,
+                decay: 0.005 + Math.random() * 0.004,
+                rot: 0,
+                rv: (Math.random() - 0.5) * 0.25,
+                grav: true,
+                shape: shapes[Math.floor(Math.random() * 3)],
+              });
+              this._go();
+            }, i * 18);
+          }
+        }
+        _go() {
+          if (this._run) return;
+          this._run = true;
+          this._loop();
+        }
+        _loop() {
+          this.p = this.p.filter((p) => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.rv;
+            p.vy += p.grav ? 0.15 : 0.06;
+            p.vx *= 0.97;
+            p.alpha -= p.decay;
+            return p.alpha > 0 && p.y < this.c.height + 40;
+          });
+          this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+          this.p.forEach((p) => {
+            this.ctx.save();
+            this.ctx.globalAlpha = p.alpha;
+            this.ctx.fillStyle = p.col;
+            this.ctx.translate(p.x, p.y);
+            this.ctx.rotate(p.rot);
+            if (p.shape === "circle") {
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, p.s / 2, 0, Math.PI * 2);
+              this.ctx.fill();
+            } else if (p.shape === "star") {
+              _drawStar(this.ctx, 0, 0, p.s / 2, p.s / 4, 5);
+              this.ctx.fill();
+            } else if (p.shape === "diamond") {
+              this.ctx.beginPath();
+              this.ctx.moveTo(0, -p.s / 2);
+              this.ctx.lineTo(p.s / 3, 0);
+              this.ctx.lineTo(0, p.s / 2);
+              this.ctx.lineTo(-p.s / 3, 0);
+              this.ctx.closePath();
+              this.ctx.fill();
+            } else {
+              this.ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s * 0.65);
+            }
+            this.ctx.restore();
+          });
+          if (this.p.length) requestAnimationFrame(() => this._loop());
+          else {
+            this._run = false;
+            this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+          }
+        }
+        clear() {
+          this.p = [];
+          this._run = false;
+          this.ctx.clearRect(0, 0, this.c.width, this.c.height);
+        }
+      }
+
+      function _drawStar(ctx, cx, cy, R, r, pts) {
+        ctx.beginPath();
+        for (let i = 0; i < pts * 2; i++) {
+          const a = (i / pts) * Math.PI - Math.PI / 2,
+            rad = i % 2 === 0 ? R : r;
+          i === 0
+            ? ctx.moveTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad)
+            : ctx.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+        }
+        ctx.closePath();
+      }
+
+      // ── Pour animation: only used for drag-drop (kept shorter) ──
+      class PourAnim {
+        constructor(fx, fy, tx, ty, pid, onDone) {
+          this.fx = fx;
+          this.fy = fy;
+          this.tx = tx;
+          this.ty = ty;
+          this.p = POTIONS[pid];
+          this.onDone = onDone;
+          this.t = 0;
+          this.dur = 200;
+          this.done = false;
+        }
+        update(dt) {
+          this.t = Math.min(this.t + dt, this.dur);
+          if (this.t >= this.dur && !this.done) {
+            this.done = true;
+            this.onDone();
+          }
+        }
+        draw(ctx) {
+          const pct = this.t / this.dur;
+          const e = pct < 0.5 ? 2 * pct * pct : -1 + (4 - 2 * pct) * pct;
+          const mx = (this.fx + this.tx) / 2,
+            my = Math.min(this.fy, this.ty) - 50;
+          const steps = 10;
+          for (let i = 0; i <= steps; i++) {
+            const s = (i / steps) * e;
+            const bx =
+              (1 - s) * (1 - s) * this.fx +
+              2 * (1 - s) * s * mx +
+              s * s * this.tx;
+            const by =
+              (1 - s) * (1 - s) * this.fy +
+              2 * (1 - s) * s * my +
+              s * s * this.ty;
+            const alpha = (1 - Math.abs(s - 0.5) * 1.6) * 0.9;
+            const r = 5 - i * 0.3;
+            if (r <= 0 || alpha <= 0) continue;
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, alpha);
+            ctx.fillStyle = this.p.base;
+            ctx.shadowColor = this.p.hi;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(bx, by, Math.max(0.5, r), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        }
+      }
+
+      function drawBG(ctx, cw, ch) {
+        const g = ctx.createLinearGradient(0, 0, 0, ch);
+        g.addColorStop(0, "#1a0935");
+        g.addColorStop(0.5, "#0d0820");
+        g.addColorStop(1, "#060318");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, cw, ch);
+        ctx.fillStyle = "rgba(255,255,255,0.025)";
+        for (let x = 18; x < cw; x += 38)
+          for (let y = 14; y < ch; y += 38) {
+            ctx.beginPath();
+            ctx.arc(
+              x + ((y % 19) - 9),
+              y + ((x % 17) - 8),
+              1.1,
+              0,
+              Math.PI * 2,
+            );
+            ctx.fill();
+          }
+        [
+          [80, 180, "#aa44ff"],
+          [360, 300, "#ff4466"],
+          [200, 600, "#3388ff"],
+          [400, 700, "#22dd66"],
+        ].forEach(([ox, oy, col]) => {
+          const g2 = ctx.createRadialGradient(ox, oy, 0, ox, oy, 120);
+          g2.addColorStop(0, col + "22");
+          g2.addColorStop(1, col + "00");
+          ctx.fillStyle = g2;
+          ctx.beginPath();
+          ctx.arc(ox, oy, 120, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function rrPath(ctx, x, y, w, h, r) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
+      function rrFill(ctx, x, y, w, h, r, fill) {
+        rrPath(ctx, x, y, w, h, r);
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+
+      function bigBtn(ctx, x, y, label, col, w = 220, h = 54) {
+        ctx.save();
+        ctx.shadowColor = col;
+        ctx.shadowBlur = 22;
+        const g = ctx.createLinearGradient(
+          x - w / 2,
+          y - h / 2,
+          x + w / 2,
+          y + h / 2,
+        );
+        g.addColorStop(0, col + "ee");
+        g.addColorStop(1, col + "99");
+        rrPath(ctx, x - w / 2, y - h / 2, w, h, h / 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 19px "Fredoka One",sans-serif';
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, x, y);
+        ctx.restore();
+      }
+
+      function circBtn(ctx, x, y, label, r = 28) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.28)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = `${r * 0.82}px "Nunito",sans-serif`;
+        ctx.fillStyle = "rgba(255,255,255,0.88)";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, x, y);
+        ctx.restore();
+      }
+
+      function getPos(e, cv) {
+        const rc = cv.getBoundingClientRect(),
+          sx = cv.width / rc.width,
+          sy = cv.height / rc.height;
+        const s = e.touches ? e.touches[0] || e.changedTouches[0] : e;
+        return { x: (s.clientX - rc.left) * sx, y: (s.clientY - rc.top) * sy };
+      }
+      function inCirc(x, y, cx, cy, r) {
+        return Math.hypot(x - cx, y - cy) < r;
+      }
+      function inRect(x, y, bx, by, hw, hh) {
+        return Math.abs(x - bx) < hw && Math.abs(y - by) < hh;
+      }
+
+      function drawFlask(ctx, cx, cy, bw, bh, layers, opts = {}) {
+        const {
+          selected = false,
+          completed = false,
+          hinted = false,
+          shakeX = 0,
+          tick = 0,
+          liftY = 0,
+        } = opts;
+        const x = cx + shakeX,
+          y = cy - liftY;
+        const nW = bw * 0.38,
+          nH = bh * 0.13,
+          bR = bw * 0.42,
+          bTop = y + nH,
+          bBot = y + nH + bh;
+        const shoulder = (bw - nW) * 0.35;
+        ctx.save();
+        if (selected || hinted) {
+          const pulse = selected ? 1 : 0.55 + Math.sin(tick * 0.006) * 0.45;
+          ctx.save();
+          ctx.shadowColor = selected
+            ? "rgba(255,240,100,0.9)"
+            : "rgba(255,200,50,0.75)";
+          ctx.shadowBlur = selected ? 36 : 22;
+          _flaskPath(ctx, x, y, bw, bh, nW, nH, bR, shoulder);
+          ctx.strokeStyle = selected
+            ? `rgba(255,255,120,${0.8 + pulse * 0.2})`
+            : `rgba(255,210,60,${pulse})`;
+          ctx.lineWidth = selected ? 3 : 2;
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.save();
+        _flaskPath(ctx, x, y, bw, bh, nW, nH, bR, shoulder);
+        ctx.clip();
+        ctx.fillStyle = completed
+          ? "rgba(180,255,200,0.12)"
+          : "rgba(10,5,40,0.72)";
+        ctx.fillRect(x - bw / 2 - 2, y - 2, bw + 4, nH + bh + 4);
+        const lH = bh / CAP;
+        layers.forEach((pid, slot) => {
+          const p = POTIONS[pid];
+          const lx = x - bw / 2,
+            ly = bBot - (slot + 1) * lH,
+            lw = bw,
+            lh = lH + 2;
+          ctx.fillStyle = p.base;
+          ctx.fillRect(lx, ly, lw, lh);
+          const sg = ctx.createLinearGradient(
+            0,
+            ly,
+            0,
+            ly + Math.min(10, lH * 0.28),
+          );
+          sg.addColorStop(0, p.hi + "dd");
+          sg.addColorStop(1, p.base + "00");
+          ctx.fillStyle = sg;
+          ctx.fillRect(lx, ly, lw, Math.min(10, lH * 0.28));
+          const lg = ctx.createLinearGradient(lx, 0, lx + lw * 0.35, 0);
+          lg.addColorStop(0, "rgba(255,255,255,0.22)");
+          lg.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = lg;
+          ctx.fillRect(lx, ly, lw * 0.35, lh);
+        });
+        if (layers.length > 0 && layers.length < CAP) {
+          const p = POTIONS[layers[layers.length - 1]];
+          _wave(
+            ctx,
+            x - bw / 2,
+            bBot - layers.length * lH,
+            bw,
+            p.base,
+            p.hi,
+            tick,
+          );
+        }
+        if (selected && layers.length > 0) {
+          _bubbles(
+            ctx,
+            x,
+            bBot - layers.length * lH,
+            bw,
+            layers.length * lH,
+            tick,
+            POTIONS[layers[0]].hi,
+          );
+        }
+        ctx.restore();
+        _flaskPath(ctx, x, y, bw, bh, nW, nH, bR, shoulder);
+        ctx.strokeStyle = completed
+          ? "rgba(140,255,170,0.85)"
+          : selected
+            ? "rgba(255,255,130,0.95)"
+            : hinted
+              ? "rgba(255,210,50,0.85)"
+              : "rgba(160,190,255,0.45)";
+        ctx.lineWidth = selected || hinted ? 3 : 2;
+        ctx.stroke();
+        ctx.save();
+        _flaskPath(ctx, x, y, bw, bh, nW, nH, bR, shoulder);
+        ctx.clip();
+        const sh = ctx.createLinearGradient(x - bw * 0.3, 0, x - bw * 0.06, 0);
+        sh.addColorStop(0, "rgba(255,255,255,0.24)");
+        sh.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = sh;
+        ctx.fillRect(x - bw * 0.36, bTop, bw * 0.32, bh);
+        ctx.restore();
+        if (completed) {
+          ctx.font = "16px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "rgba(180,255,210,0.95)";
+          ctx.fillText("✨", x, y - 16);
+        }
+        _stopper(ctx, x, y, nW);
+        ctx.restore();
+      }
+
+      function _flaskPath(ctx, cx, cy, bw, bh, nW, nH, bR, shoulder) {
+        const bTop = cy + nH,
+          bBot = cy + nH + bh;
+        ctx.beginPath();
+        ctx.moveTo(cx - nW / 2, cy);
+        ctx.lineTo(cx + nW / 2, cy);
+        ctx.lineTo(cx + nW / 2, bTop);
+        ctx.lineTo(cx + bw / 2, bTop + shoulder);
+        ctx.lineTo(cx + bw / 2, bBot - bR);
+        ctx.quadraticCurveTo(cx + bw / 2, bBot, cx + bw / 2 - bR, bBot);
+        ctx.lineTo(cx - bw / 2 + bR, bBot);
+        ctx.quadraticCurveTo(cx - bw / 2, bBot, cx - bw / 2, bBot - bR);
+        ctx.lineTo(cx - bw / 2, bTop + shoulder);
+        ctx.lineTo(cx - nW / 2, bTop);
+        ctx.closePath();
+      }
+
+      function _wave(ctx, lx, y, lw, base, hi, tick) {
+        const amp = 5,
+          steps = 12;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+          const wx = lx + (i / steps) * lw,
+            wy =
+              y + Math.sin((i / steps) * Math.PI * 2.8 + tick * 0.0025) * amp;
+          i === 0 ? ctx.moveTo(wx, wy) : ctx.lineTo(wx, wy);
+        }
+        ctx.lineTo(lx + lw, y - amp - 2);
+        ctx.lineTo(lx, y - amp - 2);
+        ctx.closePath();
+        const g = ctx.createLinearGradient(0, y - amp, 0, y + amp);
+        g.addColorStop(0, hi + "ee");
+        g.addColorStop(1, base + "55");
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+
+      function _bubbles(ctx, cx, topY, bw, fillH, tick, col) {
+        const seed = [0.2, 0.55, 0.8, 0.35, 0.65];
+        seed.forEach((s, i) => {
+          const bx = cx - bw * 0.4 + s * bw * 0.8;
+          const by = topY + fillH * 0.8 - ((tick * 0.04 + i * 37) % fillH);
+          const r = 2 + Math.sin(tick * 0.003 + i) * 1;
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.arc(bx, by, r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      function _stopper(ctx, cx, cy, nW) {
+        const cw = nW * 0.7,
+          ch = 10,
+          px = cx - cw / 2,
+          py = cy - ch,
+          r = 4;
+        ctx.beginPath();
+        ctx.moveTo(px + r, py);
+        ctx.lineTo(px + cw - r, py);
+        ctx.quadraticCurveTo(px + cw, py, px + cw, py + r);
+        ctx.lineTo(px + cw, py + ch - r);
+        ctx.quadraticCurveTo(px + cw, py + ch, px + cw - r, py + ch);
+        ctx.lineTo(px + r, py + ch);
+        ctx.quadraticCurveTo(px, py + ch, px, py + ch - r);
+        ctx.lineTo(px, py + r);
+        ctx.quadraticCurveTo(px, py, px + r, py);
+        ctx.closePath();
+        const g = ctx.createLinearGradient(px, py, px + cw, py + ch);
+        g.addColorStop(0, "#e8c060");
+        g.addColorStop(0.5, "#f8dc88");
+        g.addColorStop(1, "#b07828");
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+        ctx.save();
+        ctx.fillStyle = "rgba(255,220,100,0.7)";
+        _drawStar(ctx, cx, py + ch / 2, 3, 1.5, 5);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // ══════════════════════════════════
+      //  SCENES
+      // ══════════════════════════════════
+      class MenuScene {
+        constructor(cv, { onPlay, onLevels } = {}) {
+          this.cv = cv;
+          this.ctx = cv.getContext("2d");
+          this.onPlay = onPlay || noop;
+          this.onLevels = onLevels || noop;
+          this._t = 0;
+          this._ls = [];
+          this._initInput();
+        }
+        _initInput() {
+          const fn = (e) => {
+            e.preventDefault();
+            const p = getPos(e, this.cv);
+            this._click(p.x, p.y);
+          };
+          this.cv.addEventListener("mousedown", fn, { passive: false });
+          this.cv.addEventListener("touchstart", fn, { passive: false });
+          this._ls = [
+            ["mousedown", fn],
+            ["touchstart", fn],
+          ];
+        }
+        _click(x, y) {
+          const cw = this.cv.width,
+            ch = this.cv.height;
+          if (inRect(x, y, cw / 2, ch * 0.62, 115, 32)) {
+            this.destroy();
+            this.onPlay();
+          }
+          if (inRect(x, y, cw / 2, ch * 0.73, 115, 32)) {
+            this.destroy();
+            this.onLevels();
+          }
+        }
+        update(dt) {
+          this._t += dt;
+        }
+        draw() {
+          const ctx = this.ctx,
+            cw = this.cv.width,
+            ch = this.cv.height;
+          drawBG(ctx, cw, ch);
+          const preview = [
+            [0, 1],
+            [2, 3],
+            [4, 5],
+            [6, 7],
+          ];
+          const bw = 44,
+            bh = 90,
+            sp = 58,
+            sy = ch * 0.365;
+          const sx = cw / 2 - ((preview.length - 1) * sp) / 2;
+          preview.forEach((layers, i) => {
+            const bob = Math.sin(this._t * 0.0016 + i * 0.9) * 10;
+            drawFlask(ctx, sx + i * sp, sy + bob, bw, bh, layers, {
+              tick: this._t,
+            });
+          });
+          [0, 1, 2, 3, 4, 5].forEach((i) => {
+            const a = ((this._t * 0.0008 + i) * Math.PI * 2) / 6 + i;
+            const r = 90,
+              mx = cw / 2 + Math.cos(a) * r,
+              my = ch * 0.22 + Math.sin(a) * r * 0.4;
+            const alpha = 0.4 + Math.sin(this._t * 0.003 + i) * 0.3;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = POTIONS[i].hi;
+            _drawStar(ctx, mx, my, 5, 2.5, 5);
+            ctx.fill();
+            ctx.restore();
+          });
+          const pulse = 1 + Math.sin(this._t * 0.0019) * 0.025;
+          ctx.save();
+          ctx.translate(cw / 2, ch * 0.19);
+          ctx.scale(pulse, pulse);
+          ctx.font = '900 52px "Fredoka One",sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "rgba(0,0,0,0.35)";
+          ctx.fillText("Magic Potion Sort", 3, 5);
+          const tg = ctx.createLinearGradient(-160, 0, 160, 0);
+          tg.addColorStop(0, "#ff88aa");
+          tg.addColorStop(0.4, "#ffdd66");
+          tg.addColorStop(0.75, "#88aaff");
+          tg.addColorStop(1, "#88ffdd");
+          ctx.fillStyle = tg;
+          ctx.fillText("Magic Potion Sort", 0, 0);
+          ctx.restore();
+          ctx.font = '15px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.42)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText("✨ Sort the magical potions! ✨", cw / 2, ch * 0.295);
+          bigBtn(ctx, cw / 2, ch * 0.62, "▶  PLAY", "#ff4466");
+          bigBtn(ctx, cw / 2, ch * 0.73, "LEVELS", "#3388ff");
+          const done = Object.values(Store.prog).filter((p) => p.done).length;
+          ctx.font = '13px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.3)";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            `${done} / ${LEVELS.length} levels complete`,
+            cw / 2,
+            ch * 0.865,
+          );
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#ffcc00";
+          ctx.font = 'bold 15px "Nunito",sans-serif';
+          ctx.fillText(`🪙 ${Store.coins}`, cw - 18, 38);
+        }
+        destroy() {
+          this._ls.forEach(([e, f]) => this.cv.removeEventListener(e, f));
+        }
+      }
+
+      class LevelSelectScene {
+        constructor(cv, { onSelect, onBack } = {}) {
+          this.cv = cv;
+          this.ctx = cv.getContext("2d");
+          this.onSelect = onSelect || noop;
+          this.onBack = onBack || noop;
+          this._ls = [];
+          this._initInput();
+        }
+        _initInput() {
+          const fn = (e) => {
+            e.preventDefault();
+            const p = getPos(e, this.cv);
+            this._click(p.x, p.y);
+          };
+          this.cv.addEventListener("mousedown", fn, { passive: false });
+          this.cv.addEventListener("touchstart", fn, { passive: false });
+          this._ls = [
+            ["mousedown", fn],
+            ["touchstart", fn],
+          ];
+        }
+        _click(x, y) {
+          if (x < 70 && y < 90) {
+            this.destroy();
+            this.onBack();
+            return;
+          }
+          const { cols, cW, cH, sx, sy } = this._grid();
+          LEVELS.forEach((lvl, i) => {
+            const col = i % cols,
+              row = Math.floor(i / cols),
+              bx = sx + col * cW + cW / 2,
+              by = sy + row * cH + cH / 2;
+            if (
+              Math.abs(x - bx) < cW / 2 - 4 &&
+              Math.abs(y - by) < cH / 2 - 4 &&
+              Store.unlocked(lvl.id)
+            ) {
+              this.destroy();
+              this.onSelect(lvl.id);
+            }
+          });
+        }
+        _grid() {
+          const cw = this.cv.width,
+            cols = 4,
+            cW = (cw - 28) / cols,
+            cH = cW;
+          return { cols, cW, cH, sx: 14, sy: 104 };
+        }
+        update() {}
+        draw() {
+          const ctx = this.ctx,
+            cw = this.cv.width;
+          drawBG(ctx, cw, this.cv.height);
+          ctx.font = '26px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.75)";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText("‹", 22, 50);
+          ctx.font = 'bold 22px "Fredoka One",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.textAlign = "center";
+          ctx.fillText("Choose Your Brew", cw / 2, 50);
+          const { cols, cW, cH, sx, sy } = this._grid();
+          LEVELS.forEach((lvl, i) => {
+            const col = i % cols,
+              row = Math.floor(i / cols),
+              bx = sx + col * cW + cW / 2,
+              by = sy + row * cH + cH / 2;
+            const unlocked = Store.unlocked(lvl.id),
+              ld = Store.lvl(lvl.id),
+              stars = ld ? ld.stars : 0;
+            const pw = cW - 8,
+              ph = cH - 8,
+              r = 12;
+            ctx.save();
+            let fill = unlocked
+              ? "rgba(255,255,255,0.1)"
+              : "rgba(255,255,255,0.04)";
+            if (ld?.done) fill = "rgba(120,220,150,0.22)";
+            rrFill(ctx, bx - pw / 2, by - ph / 2, pw, ph, r, fill);
+            ctx.strokeStyle = unlocked
+              ? "rgba(255,255,255,0.25)"
+              : "rgba(255,255,255,0.07)";
+            ctx.lineWidth = 1.5;
+            rrPath(ctx, bx - pw / 2, by - ph / 2, pw, ph, r);
+            ctx.stroke();
+            ctx.font = `bold ${ph * 0.27}px "Fredoka One",sans-serif`;
+            ctx.fillStyle = unlocked ? "#fff" : "rgba(255,255,255,0.15)";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(lvl.id, bx, by - (ld ? 8 : 0));
+            if (!unlocked) {
+              ctx.font = `${ph * 0.22}px sans-serif`;
+              ctx.fillText("🔒", bx, by + 8);
+            }
+            if (stars > 0) {
+              const ss = 9;
+              let rx = bx - ss;
+              for (let s = 0; s < 3; s++) {
+                ctx.font = `${ss}px sans-serif`;
+                ctx.textBaseline = "alphabetic";
+                ctx.fillStyle =
+                  s < stars ? "#ffcc00" : "rgba(255,255,255,0.13)";
+                ctx.fillText("★", rx, by + ph / 2 - 5);
+                rx += ss + 2;
+              }
+            }
+            ctx.restore();
+          });
+        }
+        destroy() {
+          this._ls.forEach(([e, f]) => this.cv.removeEventListener(e, f));
+        }
+      }
+
+      class WinScene {
+        constructor(
+          cv,
+          {
+            levelId,
+            stars,
+            moves,
+            secs,
+            coins,
+            onNext,
+            onRestart,
+            onMenu,
+          } = {},
+        ) {
+          this.cv = cv;
+          this.ctx = cv.getContext("2d");
+          this.lid = levelId;
+          this.stars = stars || 1;
+          this.moves = moves || 0;
+          this.secs = secs || 0;
+          this.coins = coins || 0;
+          this.onNext = onNext || noop;
+          this.onRestart = onRestart || noop;
+          this.onMenu = onMenu || noop;
+          this._t = 0;
+          this._aIn = 0;
+          this._sa = [0, 0, 0];
+          this._ls = [];
+          this._btnNext = null;
+          this._btnRestart = null;
+          this._btnMenu = null;
+          this._dead = false;
+          this._initInput();
+          this._anims();
+        }
+        _anims() {
+          const s = Date.now(),
+            f = () => {
+              this._aIn = Math.min(1, (Date.now() - s) / 300);
+              if (this._aIn < 1) requestAnimationFrame(f);
+            };
+          f();
+          [0, 1, 2].forEach((i) =>
+            setTimeout(
+              () => {
+                const s2 = Date.now(),
+                  g = () => {
+                    this._sa[i] = Math.min(1, (Date.now() - s2) / 280);
+                    if (this._sa[i] < 1) requestAnimationFrame(g);
+                  };
+                g();
+              },
+              300 + i * 130,
+            ),
+          );
+        }
+        _initInput() {
+          const fn = (e) => {
+            e.preventDefault();
+            const p = getPos(e, this.cv);
+            this._click(p.x, p.y);
+          };
+          this.cv.addEventListener("mousedown", fn, { passive: false });
+          this.cv.addEventListener("touchstart", fn, { passive: false });
+          this._ls = [
+            ["mousedown", fn],
+            ["touchstart", fn],
+          ];
+        }
+        _click(x, y) {
+          if (this._dead) return;
+          if (
+            this._btnNext &&
+            inRect(x, y, this._btnNext.x, this._btnNext.y, 120, 34)
+          ) {
+            this.destroy();
+            this.lid < LEVELS.length ? this.onNext() : this.onMenu();
+            return;
+          }
+          if (
+            this._btnRestart &&
+            inCirc(x, y, this._btnRestart.x, this._btnRestart.y, 34)
+          ) {
+            this.destroy();
+            this.onRestart();
+            return;
+          }
+          if (
+            this._btnMenu &&
+            inCirc(x, y, this._btnMenu.x, this._btnMenu.y, 34)
+          ) {
+            this.destroy();
+            this.onMenu();
+            return;
+          }
+        }
+        update(dt) {
+          this._t += dt;
+        }
+        draw() {
+          const ctx = this.ctx,
+            cw = this.cv.width,
+            ch = this.cv.height,
+            a = this._aIn;
+          ctx.fillStyle = `rgba(0,0,0,${0.65 * a})`;
+          ctx.fillRect(0, 0, cw, ch);
+          if (a < 0.04) return;
+          const pw = 340,
+            ph = 440,
+            px = cw / 2 - pw / 2,
+            py = ch / 2 - ph / 2 - 20 + (1 - a) * 55;
+          this._btnNext = { x: cw / 2, y: py + ph - 138 };
+          this._btnRestart = { x: cw / 2 - 95, y: py + ph - 68 };
+          this._btnMenu = { x: cw / 2 + 95, y: py + ph - 68 };
+          ctx.save();
+          ctx.globalAlpha = a;
+          ctx.shadowColor = "rgba(0,0,0,0.6)";
+          ctx.shadowBlur = 50;
+          ctx.shadowOffsetY = 16;
+          rrFill(ctx, px, py, pw, ph, 28, "#180e3a");
+          ctx.shadowColor = "transparent";
+          ctx.strokeStyle = "rgba(180,140,255,0.35)";
+          ctx.lineWidth = 1.5;
+          rrPath(ctx, px, py, pw, ph, 28);
+          ctx.stroke();
+          const hg = ctx.createLinearGradient(px, py, px + pw, py + 80);
+          hg.addColorStop(0, "rgba(170,80,255,0.18)");
+          hg.addColorStop(1, "rgba(255,80,120,0.10)");
+          rrFill(ctx, px, py, pw, 80, 28, hg);
+          ctx.font = 'bold 26px "Fredoka One",sans-serif';
+          ctx.fillStyle = "#fff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText("🎉 Brew Complete! 🎉", cw / 2, py + 56);
+          ctx.font = '13px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.45)";
+          ctx.fillText(LEVELS[this.lid - 1]?.name || "", cw / 2, py + 76);
+          [-1, 0, 1].forEach((off, i) => {
+            const sa = this._sa[i],
+              sc = sa < 0.6 ? 1 + Math.sin((sa / 0.6) * Math.PI) * 0.6 : 1;
+            ctx.save();
+            ctx.translate(cw / 2 + off * 68, py + 152);
+            ctx.scale(sc * sa, sc * sa);
+            ctx.font = "44px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.globalAlpha = (i < this.stars ? 1 : 0.15) * a;
+            ctx.fillStyle = i < this.stars ? "#ffcc00" : "#555";
+            ctx.fillText("⭐", 0, 0);
+            ctx.restore();
+          });
+          const mm = String(Math.floor(this.secs / 60)).padStart(2, "0"),
+            ss2 = String(this.secs % 60).padStart(2, "0");
+          [
+            { l: "Moves", v: this.moves },
+            { l: "Time", v: `${mm}:${ss2}` },
+            { l: "Coins", v: `🪙 +${this.coins}` },
+          ].forEach((st, i) => {
+            const bx = px + 58 + (i * (pw - 116)) / 2,
+              by = py + 220;
+            rrFill(ctx, bx - 44, by, 88, 56, 12, "rgba(255,255,255,0.08)");
+            ctx.font = 'bold 18px "Fredoka One",sans-serif';
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillText(st.v, bx, by + 32);
+            ctx.font = '11px "Nunito",sans-serif';
+            ctx.fillStyle = "rgba(255,255,255,0.38)";
+            ctx.fillText(st.l, bx, by + 48);
+          });
+          bigBtn(
+            ctx,
+            cw / 2,
+            py + ph - 138,
+            this.lid < LEVELS.length ? "NEXT LEVEL →" : "All Brewed! 🧪",
+            "#22dd66",
+            220,
+            50,
+          );
+          circBtn(ctx, cw / 2 - 95, py + ph - 68, "↺", 28);
+          circBtn(ctx, cw / 2 + 95, py + ph - 68, "☰", 28);
+          ctx.restore();
+        }
+        destroy() {
+          if (this._dead) return;
+          this._dead = true;
+          this._ls.forEach(([e, f]) => this.cv.removeEventListener(e, f));
+        }
+      }
+
+      // ══════════════════════════════════
+      //  GAME SCENE  — fast tap edition
+      // ══════════════════════════════════
+      class GameScene {
+        constructor(cv, { levelId = 1, onWin, onMenu, onRestart } = {}) {
+          this.cv = cv;
+          this.ctx = cv.getContext("2d");
+          this.onWin = onWin || noop;
+          this.onMenu = onMenu || noop;
+          this.onRestart = onRestart || noop;
+          this.lid = Math.max(1, Math.min(levelId, LEVELS.length));
+          this.ldef = LEVELS[this.lid - 1];
+          this.fxCanvas = document.getElementById("fx");
+          this.fx = new FX(this.fxCanvas);
+          this._t = 0;
+          this._dead = false;
+          this._init();
+          this._initInput();
+          this._startTimer();
+        }
+
+        _init() {
+          this.logic = new Logic(this.ldef.tubes);
+          this._layout();
+          this.selIdx = -1;
+          // ── INSTANT lift: jump to full height on select, spring back on deselect ──
+          this._liftVals = {}; // per-tube float 0..1
+          this.hintMove = null;
+          this.won = false;
+          this.moves = 0;
+          this.elapsed = 0;
+          this._shakes = {};
+          this._done = {};
+          this._pourAnim = null; // only for drag-drop
+          this._flash = new FlashAnim();
+          this._btns = this._mkBtns();
+          this.drag = null;
+          this._dragThresh = 10;
+          this._downPos = null;
+          this._downTime = 0;
+          this._dragStarted = false;
+          this._downTube = -1;
+          this._pendingDrag = -1;
+        }
+
+        _layout() {
+          const n = this.ldef.tubes.length,
+            cw = this.cv.width,
+            ch = this.cv.height;
+          const bw = 52,
+            bh = 188,
+            nH = bh * 0.13;
+          const cols = n <= 6 ? Math.min(n, 6) : Math.ceil(n / 2);
+          const rows = Math.ceil(n / cols);
+          const gap = Math.min(
+            14,
+            (cw - 32 - cols * bw) / Math.max(cols - 1, 1),
+          );
+          const totalW = cols * bw + (cols - 1) * gap;
+          const totalH = rows * (bh + nH + 40) - 40;
+          const sx = (cw - totalW) / 2 + bw / 2;
+          const sy = 128 + (ch - 128 - 96 - totalH) / 2 + nH * 1.5;
+          this._tbs = [];
+          for (let i = 0; i < n; i++) {
+            const c = i % cols,
+              r = Math.floor(i / cols);
+            this._tbs.push({
+              idx: i,
+              x: sx + c * (bw + gap),
+              y: sy + r * (bh + nH + 40),
+              bw,
+              bh,
+            });
+          }
+        }
+
+        _mkBtns() {
+          const cw = this.cv.width,
+            ch = this.cv.height;
+          return [
+            { id: "menu", lbl: "☰", x: 30, y: 50, r: 22 },
+            { id: "undo", lbl: "↩", x: cw / 2 - 80, y: ch - 50, r: 28 },
+            { id: "restart", lbl: "↺", x: cw / 2, y: ch - 50, r: 28 },
+            { id: "hint", lbl: "💡", x: cw / 2 + 80, y: ch - 50, r: 28 },
+          ];
+        }
+
+        _initInput() {
+          const c = this.cv;
+          const od = (e) => {
+            e.preventDefault();
+            const p = getPos(e, c);
+            this._down(p.x, p.y);
+          };
+          const om = (e) => {
+            e.preventDefault();
+            const p = getPos(e, c);
+            this._move(p.x, p.y);
+          };
+          const ou = (e) => {
+            e.preventDefault();
+            const p = getPos(e, c);
+            this._up(p.x, p.y);
+          };
+          c.addEventListener("mousedown", od, { passive: false });
+          c.addEventListener("mousemove", om, { passive: false });
+          c.addEventListener("mouseup", ou, { passive: false });
+          c.addEventListener("touchstart", od, { passive: false });
+          c.addEventListener("touchmove", om, { passive: false });
+          c.addEventListener("touchend", ou, { passive: false });
+          this._ls = [
+            ["mousedown", od],
+            ["mousemove", om],
+            ["mouseup", ou],
+            ["touchstart", od],
+            ["touchmove", om],
+            ["touchend", ou],
+          ];
+        }
+
+        _down(x, y) {
+          if (this.won || this._pourAnim) return;
+          for (const b of this._btns) {
+            if (inCirc(x, y, b.x, b.y, b.r)) {
+              this._doBtn(b.id);
+              return;
+            }
+          }
+          this.hintMove = null;
+          this._downPos = { x, y };
+          this._downTime = Date.now();
+          this._dragStarted = false;
+          let hit = -1;
+          for (const tb of this._tbs) {
+            if (this._hit(x, y, tb)) {
+              hit = tb.idx;
+              break;
+            }
+          }
+          this._downTube = hit;
+          if (
+            hit !== -1 &&
+            !this.logic.empty(hit) &&
+            !this.logic.complete(hit)
+          ) {
+            this._pendingDrag = hit;
+          } else {
+            this._pendingDrag = -1;
+          }
+        }
+
+        _move(x, y) {
+          if (this.won || this._pourAnim) return;
+          if (this._pendingDrag !== -1 && this._downPos && !this.drag) {
+            const d = Math.hypot(x - this._downPos.x, y - this._downPos.y);
+            if (d > this._dragThresh) {
+              this._startDrag(this._pendingDrag, x, y);
+              this._pendingDrag = -1;
+              this._dragStarted = true;
+            }
+          }
+          if (this.drag) {
+            this.drag.tx = x;
+            this.drag.ty = y - this.drag.bh * 0.75;
+          }
+        }
+
+        _up(x, y) {
+          if (this.won || this._pourAnim) return;
+          const wasDrag = this._dragStarted;
+          this._dragStarted = false;
+          if (this.drag) {
+            let best = null,
+              bestD = 120;
+            for (const tb of this._tbs) {
+              if (tb.idx === this.drag.fromIdx) continue;
+              const d = Math.hypot(x - tb.x, y - (tb.y + tb.bh / 2));
+              if (d < bestD && this.logic.can(this.drag.fromIdx, tb.idx)) {
+                bestD = d;
+                best = tb;
+              }
+            }
+            if (best) this._commitDrag(this.drag.fromIdx, best.idx);
+            else this._cancelDrag();
+            return;
+          }
+          if (
+            !wasDrag &&
+            this._downTube !== -1 &&
+            Date.now() - this._downTime < 400
+          ) {
+            this._tap(x, y, this._downTube);
+          } else if (!wasDrag && this._downTube === -1) {
+            this.selIdx = -1;
+          }
+          this._pendingDrag = -1;
+          this._downTube = -1;
+        }
+
+        // ── INSTANT tap move: no animation, just update state + flash + sound ──
+        _tap(x, y, tappedIdx) {
+          if (this.selIdx === -1) {
+            if (
+              !this.logic.empty(tappedIdx) &&
+              !this.logic.complete(tappedIdx)
+            ) {
+              this.selIdx = tappedIdx;
+              this._liftVals[tappedIdx] = 1; // instant lift to top
+              sfx.pick();
+            }
+          } else if (tappedIdx === this.selIdx) {
+            this.selIdx = -1;
+          } else {
+            const from = this.selIdx,
+              to = tappedIdx;
+            if (this.logic.can(from, to)) {
+              const pid = this.logic.top(from);
+              const cnt = this.logic.move(from, to);
+              this.selIdx = -1;
+              if (!cnt) {
+                sfx.bad();
+                return;
+              }
+              this.moves = this.logic.moves;
+              sfx.plop(); // snappy sound for instant move
+              // brief flash ring on destination
+              const tb = this._tbs[to];
+              this._flash.add(tb.x, tb.y, POTIONS[pid].hi);
+              // check completion
+              if (this.logic.complete(to)) {
+                this._done[to] = true;
+                this.fx.burst(
+                  tb.x,
+                  tb.y + tb.bh / 2,
+                  POTIONS[this.logic.t[to][0]].base,
+                );
+                sfx.done();
+              }
+              if (this.logic.won()) this._win();
+            } else {
+              if (
+                !this.logic.empty(tappedIdx) &&
+                !this.logic.complete(tappedIdx)
+              ) {
+                this.selIdx = tappedIdx;
+                this._liftVals[tappedIdx] = 1;
+                sfx.pick();
+              } else {
+                this._shakes[to] = { t: 0, amt: 10 };
+                sfx.bad();
+                this.selIdx = -1;
+              }
+            }
+          }
+        }
+
+        _startDrag(fromIdx, x, y) {
+          const tb = this._tbs[fromIdx];
+          const cnt = this.logic.groupSz(fromIdx);
+          const layers = this.logic.t[fromIdx].slice(-cnt);
+          this.drag = {
+            fromIdx,
+            layers,
+            x: tb.x,
+            y: tb.y - 60,
+            tx: x,
+            ty: y - tb.bh * 0.75,
+            bw: tb.bw,
+            bh: tb.bh,
+          };
+          this.selIdx = -1;
+          sfx.pick();
+        }
+
+        _commitDrag(from, to) {
+          const pid = this.logic.top(from);
+          const fromTb = this._tbs[from],
+            toTb = this._tbs[to];
+          // show short pour arc for drag-drops (feels right for a drag gesture)
+          const dragLayers = this.drag ? [...this.drag.layers] : [];
+          this.drag = null;
+          this._pourAnim = new PourAnim(
+            fromTb.x,
+            fromTb.y - 8,
+            toTb.x,
+            toTb.y - 8,
+            pid,
+            () => {
+              const cnt = this.logic.move(from, to);
+              this._pourAnim = null;
+              if (!cnt) {
+                sfx.bad();
+                return;
+              }
+              this.moves = this.logic.moves;
+              sfx.plop();
+              if (this.logic.complete(to)) {
+                this._done[to] = true;
+                const tb = this._tbs[to];
+                this.fx.burst(
+                  tb.x,
+                  tb.y + tb.bh / 2,
+                  POTIONS[this.logic.t[to][0]].base,
+                );
+                sfx.done();
+              }
+              if (this.logic.won()) this._win();
+            },
+          );
+        }
+
+        _cancelDrag() {
+          if (!this.drag) return;
+          this._shakes[this.drag.fromIdx] = { t: 0, amt: 10 };
+          this.drag = null;
+          sfx.bad();
+        }
+
+        _hit(x, y, tb) {
+          return (
+            Math.abs(x - tb.x) < tb.bw * 0.75 &&
+            y > tb.y - 16 &&
+            y < tb.y + tb.bh + tb.bh * 0.14 + 20
+          );
+        }
+
+        _doBtn(id) {
+          if (id === "menu") {
+            this.destroy();
+            this.onMenu();
+          } else if (id === "undo") {
+            if (this.logic.undo()) {
+              this._done = {};
+              this.logic.t.forEach((_, i) => {
+                if (this.logic.complete(i)) this._done[i] = true;
+              });
+              this.moves = this.logic.moves;
+              this.selIdx = -1;
+              sfx.undo();
+            }
+          } else if (id === "restart") {
+            this.destroy();
+            this.onRestart();
+          } else if (id === "hint") {
+            const h = this.logic.hint();
+            if (h) {
+              this.hintMove = h;
+              clearTimeout(this._ht);
+              this._ht = setTimeout(() => (this.hintMove = null), 2400);
+              sfx.hint();
+            }
+          }
+        }
+
+        _win() {
+          this.won = true;
+          this._stopTimer();
+          sfx.win();
+          this.fx.confetti();
+          const filled = this.ldef.tubes.filter((t) => t.length > 0).length;
+          const ideal = filled * 2;
+          const stars =
+            this.moves <= ideal ? 3 : this.moves <= ideal * 2 ? 2 : 1;
+          const coinsMap = [0, 5, 12, 22];
+          const coins = coinsMap[stars];
+          Store.addCoins(coins);
+          Store.save(this.lid, stars, this.moves, Math.round(this.elapsed));
+          setTimeout(
+            () =>
+              this.onWin({
+                stars,
+                moves: this.moves,
+                secs: Math.round(this.elapsed),
+                coins,
+              }),
+            600,
+          );
+        }
+
+        _startTimer() {
+          this._t0 = Date.now();
+          this._ti = setInterval(() => {
+            if (!this.won) this.elapsed = (Date.now() - this._t0) / 1000;
+          }, 350);
+        }
+        _stopTimer() {
+          clearInterval(this._ti);
+        }
+
+        update(dt) {
+          this._t += dt;
+
+          // ── Per-tube lift: instant up (=1 on select), spring back to 0 on deselect ──
+          for (const tb of this._tbs) {
+            const i = tb.idx;
+            const target = i === this.selIdx ? 1 : 0;
+            if (!this._liftVals[i]) this._liftVals[i] = 0;
+            if (target === 1) {
+              this._liftVals[i] = 1; // snap up instantly
+            } else {
+              // spring back — faster than before (0.18 → 0.38)
+              this._liftVals[i] += (0 - this._liftVals[i]) * 0.38;
+              if (this._liftVals[i] < 0.005) this._liftVals[i] = 0;
+            }
+          }
+
+          // drag smooth
+          if (this.drag) {
+            this.drag.x += (this.drag.tx - this.drag.x) * 0.35;
+            this.drag.y += (this.drag.ty - this.drag.y) * 0.35;
+          }
+
+          // shakes — faster decay
+          for (const k in this._shakes) {
+            const s = this._shakes[k];
+            s.t += dt;
+            s.amt = Math.max(0, s.amt - dt * 0.09);
+            if (s.amt <= 0) delete this._shakes[k];
+          }
+
+          // flash
+          this._flash.update(dt);
+
+          if (this._pourAnim) this._pourAnim.update(dt);
+        }
+
+        draw() {
+          const ctx = this.ctx,
+            cw = this.cv.width,
+            ch = this.cv.height;
+          ctx.clearRect(0, 0, cw, ch);
+          drawBG(ctx, cw, ch);
+
+          // header
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.font = 'bold 18px "Fredoka One",sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText(`Level ${this.lid}  ·  ${this.ldef.name}`, cw / 2, 50);
+          ctx.font = '13px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.52)";
+          ctx.fillText(`Moves: ${this.moves}`, cw / 2 - 68, 74);
+          const sec = Math.round(this.elapsed),
+            mm = String(Math.floor(sec / 60)).padStart(2, "0"),
+            ss = String(sec % 60).padStart(2, "0");
+          ctx.fillText(`⏱ ${mm}:${ss}`, cw / 2 + 68, 74);
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#ffcc00";
+          ctx.font = 'bold 14px "Nunito",sans-serif';
+          ctx.fillText(`🪙 ${Store.coins}`, cw - 16, 50);
+
+          // draw flash rings behind flasks
+          const bw = this._tbs[0]?.bw || 52,
+            bh = this._tbs[0]?.bh || 188;
+          this._flash.draw(ctx, bw, bh);
+
+          // bottles
+          this._tbs.forEach((tb) => {
+            const shX = this._shakes[tb.idx]
+              ? this._shakes[tb.idx].amt *
+                Math.sin(this._shakes[tb.idx].t * 0.45)
+              : 0;
+            const isSel = tb.idx === this.selIdx;
+            const isHint =
+              this.hintMove &&
+              (tb.idx === this.hintMove.from || tb.idx === this.hintMove.to);
+            const isDone = !!this._done[tb.idx];
+            const liftY = (this._liftVals[tb.idx] || 0) * 22;
+            const layers = [...this.logic.t[tb.idx]];
+            drawFlask(ctx, tb.x, tb.y, tb.bw, tb.bh, layers, {
+              selected: isSel,
+              completed: isDone,
+              hinted: isHint,
+              shakeX: shX,
+              tick: this._t,
+              liftY,
+            });
+          });
+
+          // selection indicator bubble
+          if (this.selIdx !== -1) {
+            const tb = this._tbs[this.selIdx],
+              top = this.logic.top(this.selIdx);
+            if (top !== null) {
+              const p = POTIONS[top];
+              const liftY = (this._liftVals[this.selIdx] || 0) * 22;
+              const by = tb.y - 46 - Math.sin(this._t * 0.004) * 6 - liftY;
+              ctx.save();
+              ctx.shadowColor = p.hi;
+              ctx.shadowBlur = 18;
+              ctx.beginPath();
+              ctx.arc(tb.x, by, 11, 0, Math.PI * 2);
+              ctx.fillStyle = p.base;
+              ctx.fill();
+              ctx.strokeStyle = p.hi;
+              ctx.lineWidth = 2.2;
+              ctx.stroke();
+              ctx.fillStyle = p.hi;
+              ctx.beginPath();
+              ctx.moveTo(tb.x - 5, by + 13);
+              ctx.lineTo(tb.x + 5, by + 13);
+              ctx.lineTo(tb.x, by + 20);
+              ctx.closePath();
+              ctx.fill();
+              ctx.restore();
+            }
+          }
+
+          // drag ghost
+          if (this.drag) {
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.5)";
+            ctx.shadowBlur = 30;
+            ctx.shadowOffsetY = 14;
+            drawFlask(
+              ctx,
+              this.drag.x,
+              this.drag.y,
+              this.drag.bw,
+              this.drag.bh,
+              this.drag.layers,
+              { tick: this._t },
+            );
+            ctx.restore();
+          }
+
+          if (this._pourAnim) this._pourAnim.draw(ctx);
+
+          // buttons
+          this._btns.forEach((b) => circBtn(ctx, b.x, b.y, b.lbl, b.r));
+          ctx.font = '10px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.28)";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillText("HINT", cw / 2 + 80, ch - 18);
+
+          if (this.won) {
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.fillRect(0, 0, cw, ch);
+          }
+        }
+
+        destroy() {
+          if (this._dead) return;
+          this._dead = true;
+          this._stopTimer();
+          clearTimeout(this._ht);
+          this.fx.clear();
+          this._ls.forEach(([e, f]) => this.cv.removeEventListener(e, f));
+        }
+      }
+
+      // ══════════════════════════════════
+      //  APP CONTROLLER
+      // ══════════════════════════════════
+      function noop() {}
+
+      class App {
+        constructor() {
+          this.cv = document.getElementById("cv");
+          this.fx = document.getElementById("fx");
+          this._resize();
+          window.addEventListener("resize", () => this._resize());
+          this.scene = null;
+          this._raf = null;
+          this._lid = 1;
+          this._splash();
+        }
+        _resize() {
+          const mW = 480,
+            mH = 854,
+            ratio = mH / mW;
+          let w = Math.min(window.innerWidth, mW),
+            h = Math.round(w * ratio);
+          if (h > window.innerHeight) {
+            h = window.innerHeight;
+            w = Math.round(h / ratio);
+          }
+          [this.cv, this.fx].forEach((c) => {
+            c.width = mW;
+            c.height = mH;
+            c.style.width = w + "px";
+            c.style.height = h + "px";
+          });
+          const wrap = document.getElementById("wrap");
+          wrap.style.width = w + "px";
+          wrap.style.height = h + "px";
+        }
+        _splash() {
+          const ctx = this.cv.getContext("2d");
+          drawBG(ctx, W, H);
+          ctx.font = '900 44px "Fredoka One",sans-serif';
+          ctx.fillStyle = "#fff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("✨ Magic Potion Sort", W / 2, H / 2 - 20);
+          ctx.font = '16px "Nunito",sans-serif';
+          ctx.fillStyle = "rgba(255,255,255,0.38)";
+          ctx.fillText("Brewing…", W / 2, H / 2 + 28);
+          setTimeout(() => this.showMenu(), 700);
+        }
+        _set(s) {
+          if (this.scene && this.scene.destroy) this.scene.destroy();
+          this.scene = s;
+        }
+        showMenu() {
+          this._set(
+            new MenuScene(this.cv, {
+              onPlay: () => this._next(),
+              onLevels: () => this.showLevels(),
+            }),
+          );
+          this._loop();
+        }
+        showLevels() {
+          this._set(
+            new LevelSelectScene(this.cv, {
+              onSelect: (id) => this.play(id),
+              onBack: () => this.showMenu(),
+            }),
+          );
+          this._loop();
+        }
+        play(id) {
+          this._lid = id;
+          this._set(
+            new GameScene(this.cv, {
+              levelId: id,
+              onWin: (d) => this.showWin(d),
+              onMenu: () => this.showMenu(),
+              onRestart: () => this.play(id),
+            }),
+          );
+          this._loop();
+        }
+        showWin(data) {
+          const id = this._lid,
+            gs = this.scene;
+          this._stop();
+          const ws = new WinScene(this.cv, {
+            ...data,
+            levelId: id,
+            onNext: () => {
+              gs.destroy();
+              this._set(null);
+              this.play(Math.min(id + 1, LEVELS.length));
+            },
+            onRestart: () => {
+              gs.destroy();
+              this._set(null);
+              this.play(id);
+            },
+            onMenu: () => {
+              gs.destroy();
+              this._set(null);
+              this.showMenu();
+            },
+          });
+          let prev = performance.now();
+          const loop = (now) => {
+            const dt = now - prev;
+            prev = now;
+            gs.update(dt);
+            gs.draw();
+            ws.update(dt);
+            ws.draw();
+            this._raf = requestAnimationFrame(loop);
+          };
+          this._raf = requestAnimationFrame(loop);
+          this.scene = ws;
+        }
+        _loop() {
+          this._stop();
+          let prev = performance.now();
+          const f = (now) => {
+            const dt = now - prev;
+            prev = now;
+            this.scene?.update(dt);
+            this.scene?.draw();
+            this._raf = requestAnimationFrame(f);
+          };
+          this._raf = requestAnimationFrame(f);
+        }
+        _stop() {
+          if (this._raf) cancelAnimationFrame(this._raf);
+          this._raf = null;
+        }
+        _next() {
+          const p = Store.prog;
+          for (const l of LEVELS) {
+            if ((!p[l.id] || !p[l.id].done) && Store.unlocked(l.id)) {
+              this.play(l.id);
+              return;
+            }
+          }
+          this.play(LEVELS.length);
+        }
+      }
+
+      if (document.readyState === "loading")
+        document.addEventListener("DOMContentLoaded", () => new App());
+      else new App();
+    </script>
+  </body>
+</html>
